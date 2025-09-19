@@ -53,10 +53,9 @@ function newtonRaphson(funcStr, x0, tol = 1e-6, maxIter = 20) {
   }
 }
 
-// 🔹 Pedir función
 const funcionUsuario = prompt("Ingrese la función en x (ej: x^3 - x - 2): ");
 
-// 🔹 Validar entrada numérica para x0
+// Validar entrada numérica para x0
 let x0;
 while (true) {
   const entrada = prompt("Ingrese el valor inicial x0 (puede ser positivo, negativo o decimal): ");
@@ -68,7 +67,7 @@ while (true) {
   console.log("⚠ Entrada inválida. Debe ingresar un número.");
 }
 
-// 🔹 Validar entrada numérica para tolerancia
+// Validar entrada numérica para tolerancia
 let tol;
 while (true) {
   const entradaTol = prompt("Ingrese la tolerancia (ej: 0.0001): ");
@@ -86,7 +85,7 @@ const resultado = newtonRaphson(funcionUsuario, x0, tol);
 if (resultado !== null) {
   console.log(`\nResultado final: x ≈ ${resultado.toFixed(6)}`);
 
-  // 🔹 Generar datos para el gráfico
+  //Generar datos para el gráfico
   const f = (x) => evaluate(funcionUsuario, { x });
   const xs = [];
   const ys = [];
@@ -100,7 +99,7 @@ if (resultado !== null) {
     ys.push(f(x));
   }
 
-  // 🔹 Mostrar gráfico
+  //Mostrar gráfico
   plot([
     {
       x: xs,
