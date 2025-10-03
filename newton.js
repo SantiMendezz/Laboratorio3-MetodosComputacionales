@@ -5,19 +5,39 @@ import { plot } from "nodeplotlib";
 const prompt = promptSync();
 
 // Método Newton-Raphson
-function newtonRaphson(funcStr, x0, tol = 1e-6, maxIter = 20) {
+function newtonRaphson(funcStr, a, b, tol = 1e-6, maxIter = 20) {
   try {
-    // Validar que la función sea válida y contenga la variable "x"
+    // Validar función
     if (!funcStr.includes("x")) {
       throw new Error("La función debe contener la variable x.");
     }
     parse(funcStr);
 
     const f = (x) => evaluate(funcStr, { x });
-    const df = (x) => evaluate(derivative(funcStr, "x").toString(), { x });
+    const dfStr = derivative(funcStr, "x").toString();
+    const ddfStr = derivative(dfStr, "x").toString(); // segunda derivada
+    const df = (x) => evaluate(dfStr, { x });
+    const ddf = (x) => evaluate(ddfStr, { x });
+
+    // Evaluar extremos
+    const fa = f(a), fb = f(b);
+    const f2a = ddf(a), f2b = ddf(b);
+
+    let x0;
+    if (fa * f2a > 0) {
+      x0 = a;
+      console.log(`✔ Condición de Fourier: Usamos a = ${a}`);
+    } else if (fb * f2b > 0) {
+      x0 = b;
+      console.log(`✔ Condición de Fourier: Usamos b = ${b}`);
+    } else {
+      console.error("⚠ Ningún extremo cumple la condición de Fourier.");
+      return null;
+    }
 
     console.log("\nFunción ingresada:", funcStr);
-    console.log("Derivada:", derivative(funcStr, "x").toString());
+    console.log("f'(x):", dfStr);
+    console.log("f''(x):", ddfStr);
     console.log("Iteraciones Newton-Raphson:\n");
 
     let xi = x0;
@@ -55,22 +75,24 @@ function newtonRaphson(funcStr, x0, tol = 1e-6, maxIter = 20) {
 
 const funcionUsuario = prompt("Ingrese la función en x (ej: x^3 - x - 2): ");
 
-// Validar entrada numérica para x0
-let x0;
+// Intervalo [a, b]
+let a, b;
 while (true) {
-  const entrada = prompt("Ingrese el valor inicial x0 (puede ser positivo, negativo o decimal): ");
-  x0 = Number(entrada);
+  const entradaA = Number(prompt("Ingrese el límite inferior a: "));
+  const entradaB = Number(prompt("Ingrese el límite superior b: "));
 
-  if (!isNaN(x0)) {
+  if (!isNaN(entradaA) && !isNaN(entradaB) && entradaA < entradaB) {
+    a = entradaA;
+    b = entradaB;
     break;
   }
-  console.log("⚠ Entrada inválida. Debe ingresar un número.");
+  console.log("⚠ Intervalo inválido. a debe ser menor que b.");
 }
 
-// Validar entrada numérica para tolerancia
+// Tolerancia
 let tol;
 while (true) {
-  const entradaTol = prompt("Ingrese la tolerancia (ej: 0.0001): ");
+  const entradaTol = Number(prompt("Ingrese la tolerancia (ej: 0.0001): "));
   tol = Number(entradaTol);
 
   if (!isNaN(tol) && tol > 0) {
@@ -79,18 +101,18 @@ while (true) {
   console.log("⚠ Entrada inválida. Debe ingresar un número mayor que 0.");
 }
 
-// Ejecutar Newton-Raphson
-const resultado = newtonRaphson(funcionUsuario, x0, tol);
+// Ejecutar Newton-Raphson con condición de Fourier
+const resultado = newtonRaphson(funcionUsuario, a, b, tol);
 
 if (resultado !== null) {
   console.log(`\nResultado final: x ≈ ${resultado.toFixed(6)}`);
 
-  //Generar datos para el gráfico
+  // Graficar
   const f = (x) => evaluate(funcionUsuario, { x });
   const xs = [];
   const ys = [];
-  const rangoMin = x0 - 5;
-  const rangoMax = x0 + 5;
+  const rangoMin = a - 1;
+  const rangoMax = b + 1;
   const pasos = 100;
 
   for (let i = 0; i <= pasos; i++) {
@@ -99,7 +121,6 @@ if (resultado !== null) {
     ys.push(f(x));
   }
 
-  //Mostrar gráfico
   plot([
     {
       x: xs,
@@ -118,5 +139,5 @@ if (resultado !== null) {
     },
   ]);
 } else {
-  console.log("❌ No se generará gráfico porque la función no es válida.");
+  console.log("❌ No se generará gráfico porque no se encontró raíz.");
 }
