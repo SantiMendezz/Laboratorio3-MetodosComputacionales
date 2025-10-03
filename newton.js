@@ -4,7 +4,7 @@ import { plot } from "nodeplotlib";
 
 const prompt = promptSync();
 
-// Método Newton-Raphson
+// Metodo Newton-Raphson
 function newtonRaphson(funcStr, a, b, tol = 1e-6, maxIter = 20) {
   try {
     // Validar función
@@ -54,7 +54,7 @@ function newtonRaphson(funcStr, a, b, tol = 1e-6, maxIter = 20) {
       console.log(
         `Iteración ${i}: x = ${xi.toFixed(6)}, f(x) = ${fxi.toFixed(
           6
-        )}, f'(x) = ${dfxi.toFixed(6)}, x_next = ${xnext.toFixed(6)}`
+        )}, f'(x) = ${dfxi.toFixed(6)}, x-resultante = ${xnext.toFixed(6)}`
       );
 
       if (Math.abs(xnext - xi) < tol) {
