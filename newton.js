@@ -4,25 +4,24 @@ import { plot } from "nodeplotlib";
 
 const prompt = promptSync();
 
-// Metodo Newton-Raphson
+// Método Newton-Raphson con impresión de iteraciones
 function newtonRaphson(funcStr, a, b, tol = 1e-6, maxIter = 20) {
   try {
-    // Validar función
-    if (!funcStr.includes("x")) {
-      throw new Error("La función debe contener la variable x.");
-    }
+    // Validar la función
     parse(funcStr);
 
     const f = (x) => evaluate(funcStr, { x });
     const dfStr = derivative(funcStr, "x").toString();
-    const ddfStr = derivative(dfStr, "x").toString(); // segunda derivada
+    const ddfStr = derivative(dfStr, "x").toString();
     const df = (x) => evaluate(dfStr, { x });
     const ddf = (x) => evaluate(ddfStr, { x });
 
-    // Evaluar extremos
-    const fa = f(a), fb = f(b);
-    const f2a = ddf(a), f2b = ddf(b);
-
+    // Calculo de imagen de la funcion en los extremos y sus 2das derivadas
+    const fa = f(a),
+      fb = f(b);
+    const f2a = ddf(a),
+      f2b = ddf(b);
+    // Evaluar extremos por condicion de fourier
     let x0;
     if (fa * f2a > 0) {
       x0 = a;
@@ -35,13 +34,14 @@ function newtonRaphson(funcStr, a, b, tol = 1e-6, maxIter = 20) {
       return null;
     }
 
+    //Mostrar la funcion y sus derivadas
     console.log("\nFunción ingresada:", funcStr);
     console.log("f'(x):", dfStr);
     console.log("f''(x):", ddfStr);
-    console.log("Iteraciones Newton-Raphson:\n");
+    console.log("\nIteraciones Newton-Raphson:\n");
 
     let xi = x0;
-    for (let i = 1; i <= maxIter; i++) {
+    for (let i = 1; i <= maxIter; i++) { //Iteraciones
       const fxi = f(xi);
       const dfxi = df(xi);
 
@@ -50,19 +50,19 @@ function newtonRaphson(funcStr, a, b, tol = 1e-6, maxIter = 20) {
         return null;
       }
 
-      const xnext = xi - fxi / dfxi;
+      const xnext = xi - fxi / dfxi; //Calculo de la iteracion
       console.log(
         `Iteración ${i}: x = ${xi.toFixed(6)}, f(x) = ${fxi.toFixed(
           6
         )}, f'(x) = ${dfxi.toFixed(6)}, x-resultante = ${xnext.toFixed(6)}`
       );
 
-      if (Math.abs(xnext - xi) < tol) {
+      if (Math.abs(xnext - xi) < tol) { //Verifica la convergencia
         console.log("\n✔ Convergencia alcanzada");
         return xnext;
       }
 
-      xi = xnext;
+      xi = xnext; //Actualiza el valor de xi al nuevo valor calculado
     }
 
     console.log("\n❌ No se alcanzó convergencia en el máximo de iteraciones");
@@ -73,47 +73,81 @@ function newtonRaphson(funcStr, a, b, tol = 1e-6, maxIter = 20) {
   }
 }
 
+// Método de tanteos para encontrar intervalos con cambio de signo
+function tanteo(funcStr, xMin = -10, xMax = 10, paso = 0.5) { // El incremental es 0.5
+  const f = (x) => evaluate(funcStr, { x });
+  const intervalos = [];
+
+  let x0 = xMin;
+  let f0 = f(x0);
+
+  for (let x = xMin + paso; x <= xMax; x += paso) {
+    const f1 = f(x);
+    if (f0 * f1 < 0) {
+      intervalos.push([x0, x]); //Agrega nuevo intervalo
+    }
+    //Actualiza con los nuevos valores
+    x0 = x;
+    f0 = f1;
+  }
+
+  //Cantidad de elementos del array que cumplen las siguientes condiciones
+  const positivas = intervalos.filter(([a, b]) => a >= 0).length;
+  const negativas = intervalos.filter(([a, b]) => b <= 0).length;
+
+  console.log(`\n🔍 Intervalos detectados con cambio de signo:`);
+  intervalos.forEach(([a, b], i) =>
+    console.log(`  Raíz ${i + 1}: entre [${a}, ${b}]`)
+  );
+
+  console.log(`\n➡ Raíces positivas: ${positivas}`);
+  console.log(`➡ Raíces negativas: ${negativas}`);
+
+  return intervalos;
+}
+
+// Programa principal
 const funcionUsuario = prompt("Ingrese la función en x (ej: x^3 - x - 2): ");
+const tol = Number(prompt("Ingrese la tolerancia (ej: 0.0001): ")) || 1e-6;
 
-// Intervalo [a, b]
-let a, b;
-while (true) {
-  const entradaA = Number(prompt("Ingrese el límite inferior a: "));
-  const entradaB = Number(prompt("Ingrese el límite superior b: "));
+// Configuración del tanteo
+const rangoInferior = -10;
+const rangoSuperior = 10;
+const paso = 0.5;
 
-  if (!isNaN(entradaA) && !isNaN(entradaB) && entradaA < entradaB) {
-    a = entradaA;
-    b = entradaB;
-    break;
-  }
-  console.log("⚠ Intervalo inválido. a debe ser menor que b.");
+// Buscar intervalos
+const intervalos = tanteo(funcionUsuario, rangoInferior, rangoSuperior, paso);
+
+if (intervalos.length === 0) {
+  console.log("❌ No se detectaron cambios de signo en el rango analizado.");
+  process.exit(0);
 }
 
-// Tolerancia
-let tol;
-while (true) {
-  const entradaTol = Number(prompt("Ingrese la tolerancia (ej: 0.0001): "));
-  tol = Number(entradaTol);
+// Ejecutar Newton-Raphson para cada raíz detectada
+const raices = [];
+for (const [a, b] of intervalos) {
+  console.log("\n======================================");
+  console.log(`🔹 Aplicando Newton-Raphson en [${a}, ${b}]`);
+  console.log("======================================\n");
 
-  if (!isNaN(tol) && tol > 0) {
-    break;
+  const raiz = newtonRaphson(funcionUsuario, a, b, tol);
+
+  if (raiz !== null) {
+    console.log(`\n✔ Raíz encontrada entre [${a}, ${b}]: x ≈ ${raiz.toFixed(6)}\n`);
+    raices.push(raiz);
+  } else {
+    console.log(`❌ Falló la convergencia en [${a}, ${b}]`);
   }
-  console.log("⚠ Entrada inválida. Debe ingresar un número mayor que 0.");
 }
 
-// Ejecutar Newton-Raphson con condición de Fourier
-const resultado = newtonRaphson(funcionUsuario, a, b, tol);
-
-if (resultado !== null) {
-  console.log(`\nResultado final: x ≈ ${resultado.toFixed(6)}`);
-
-  // Graficar
+// Graficar función y raíces encontradas
+if (raices.length > 0) {
   const f = (x) => evaluate(funcionUsuario, { x });
   const xs = [];
   const ys = [];
-  const rangoMin = a - 1;
-  const rangoMax = b + 1;
-  const pasos = 100;
+  const rangoMin = rangoInferior - 1;
+  const rangoMax = rangoSuperior + 1;
+  const pasos = 200;
 
   for (let i = 0; i <= pasos; i++) {
     const x = rangoMin + (i * (rangoMax - rangoMin)) / pasos;
@@ -130,14 +164,14 @@ if (resultado !== null) {
       name: funcionUsuario,
     },
     {
-      x: [resultado],
-      y: [f(resultado)],
+      x: raices,
+      y: raices.map((r) => f(r)),
       type: "scatter",
       mode: "markers",
-      name: "Raíz encontrada",
-      marker: { color: "red", size: 12 },
+      name: "Raíces encontradas",
+      marker: { color: "red", size: 10 },
     },
   ]);
 } else {
-  console.log("❌ No se generará gráfico porque no se encontró raíz.");
+  console.log("❌ No se encontró ninguna raíz válida.");
 }
