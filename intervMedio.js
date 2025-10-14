@@ -116,13 +116,13 @@ function metodoIntervaloMedio(funcStr, a, b, tol = 1e-6) {
   console.log(`Iteraciones teóricas máximas: ${nMax}`);
   console.log("\nIteraciones Método del Intervalo Medio:\n");
 
-  let xi = (a + b) / 2;
-  let xiAnt = xi;
+  let xi = a;         // Inicializo xi en el límite izquierdo
+  let xiAnt = null;   // Para indicar que aún no hay iteración anterior
 
   for (let i = 1; i <= nMax; i++) {
     xi = (a + b) / 2;
     const fxi = f(xi);
-    
+
     console.log(
       `Iteración ${i}: a = ${a.toFixed(6)}, b = ${b.toFixed(6)}, ` +
         `xi = ${xi.toFixed(6)}, f(a) = ${fa.toFixed(6)}, f(b) = ${fb.toFixed(
@@ -130,13 +130,13 @@ function metodoIntervaloMedio(funcStr, a, b, tol = 1e-6) {
         )}, f(xi) = ${fxi.toFixed(6)}`
     );
 
-    // Condición de parada
-    if (Math.abs(xi - xiAnt) < tol) {
+    // Condición de parada: no se evalúa si xiAnt es null (primera iteración)
+    if (xiAnt !== null && (Math.abs(xi - xiAnt) < tol || Math.abs(fxi) < tol)) {
       console.log("\n✔ Convergencia alcanzada");
       return { raiz: xi, iteraciones: i, intervalo: [a, b] };
     }
 
-    // Actualización del intervalo
+    // Actualización del intervalo según el cambio de signo
     if (fa * fxi < 0) {
       b = xi;
       fb = fxi; // Actualizar fb
@@ -145,7 +145,7 @@ function metodoIntervaloMedio(funcStr, a, b, tol = 1e-6) {
       fa = fxi; // Actualizar fa
     }
 
-    xiAnt = xi;
+    xiAnt = xi; // Actualizo xi anterior para la siguiente iteración
   }
 
   console.log("\n❌ No se alcanzó convergencia en el máximo de iteraciones");
