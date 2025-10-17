@@ -117,6 +117,8 @@ const rangoInferior = -10;
 const rangoSuperior = 10;
 const paso = 0.5;
 
+console.time("Tiempo de ejecución");
+
 // Buscar intervalos
 const intervalos = tanteo(funcionUsuario, rangoInferior, rangoSuperior, paso);
 
@@ -177,3 +179,5 @@ if (raices.length > 0) {
 } else {
   console.log("❌ No se encontró ninguna raíz válida.");
 }
+
+console.timeEnd("Tiempo de ejecución");

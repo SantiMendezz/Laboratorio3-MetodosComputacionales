@@ -170,6 +170,8 @@ const tol = Number(prompt("Ingrese la tolerancia (ej: 0.001): ")) || 0.001;
 const rangoMin = -10;
 const rangoMax = 10;
 
+console.time("Tiempo de ejecución");
+
 // Busco intervalos automáticamente
 console.log(`\n🔍 Buscando intervalos con cambio de signo en [${rangoMin}, ${rangoMax}]...`);
 const { intervalos, raicesDirectas } = buscarIntervalos(funcionUsuario, rangoMin, rangoMax, 0.5);
@@ -287,3 +289,5 @@ if (raices.length > 0) {
     console.error("Error al graficar:", err.message || err);
   }
 }
+
+console.timeEnd("Tiempo de ejecución");
