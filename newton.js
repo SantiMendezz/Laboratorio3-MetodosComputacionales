@@ -50,11 +50,13 @@ function newtonRaphson(funcStr, a, b, tol = 1e-6, maxIter = 20) {
         return null;
       }
 
+      //let diferenciaError = Math.abs(xnext - xi);
+
       const xnext = xi - fxi / dfxi; //Calculo de la iteracion
       console.log(
         `Iteración ${i}: x = ${xi.toFixed(6)}, f(x) = ${fxi.toFixed(
           6
-        )}, f'(x) = ${dfxi.toFixed(6)}, x-resultante = ${xnext.toFixed(6)}`
+        )}, f'(x) = ${dfxi.toFixed(6)}, x-resultante = ${xnext.toFixed(6)}, dif-error = ${Math.abs(xnext - xi).toFixed(6)}`
       );
 
       if (Math.abs(xnext - xi) < tol) { //Verifica la convergencia
@@ -114,6 +116,8 @@ const tol = Number(prompt("Ingrese la tolerancia (ej: 0.0001): ")) || 1e-6;
 const rangoInferior = -10;
 const rangoSuperior = 10;
 const paso = 0.5;
+
+console.time("Tiempo de ejecución");
 
 // Buscar intervalos
 const intervalos = tanteo(funcionUsuario, rangoInferior, rangoSuperior, paso);
@@ -175,3 +179,5 @@ if (raices.length > 0) {
 } else {
   console.log("❌ No se encontró ninguna raíz válida.");
 }
+
+console.timeEnd("Tiempo de ejecución");

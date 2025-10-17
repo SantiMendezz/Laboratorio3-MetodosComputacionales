@@ -1,211 +1,163 @@
-import { evaluate, parse, log10 } from "mathjs";
+import { evaluate, parse } from "mathjs";
 import promptSync from "prompt-sync";
 import { plot } from "nodeplotlib";
 
 const prompt = promptSync();
 
-// ============================================================
-// FUNCIONES AUXILIARES
-// ============================================================
-
-// Validar función
-function validarFuncion(funcionStr) {
+// MÉTODO DE INTERPOLACIÓN LINEAL
+function interpolacionLineal(funcStr, a, b, tol = 1e-6, maxIter = 50) { //1e-6 y 50 son valores predefinidos si estos no tienen valores asignados
   try {
-    parse(funcionStr);
-    return true;
-  } catch {
-    return false;
-  }
-}
+    parse(funcStr); //evalua la funcion ingresada
+    const f = (x) => evaluate(funcStr, { x }); //inicializa la funcion
 
-// Contar cambios de signo en los coeficientes (Regla de Descartes)
-function contarCambiosSigno(coefs) {
-  let cambios = 0;
-  for (let i = 0; i < coefs.length - 1; i++) {
-    if (coefs[i] * coefs[i + 1] < 0) cambios++;
-  }
-  return cambios;
-}
+    //Funciones
+    let fa = f(a);
+    let fb = f(b);
 
-// Extraer coeficientes de una función polinómica simple en x
-function extraerCoeficientes(polinomioStr) {
-  const expr = polinomioStr.replace(/\s+/g, "");
-  const terminos = expr.match(/[+-]?\d*\.?\d*x?(\^\d+)?/g)?.filter((t) => t) || [];
-  const coefs = {};
-
-  for (const term of terminos) {
-    const match = term.match(/([+-]?\d*\.?\d*)x?(\^(\d+))?/);
-    if (!match) continue;
-
-    let [, num, , exp] = match;
-    const coef = num === "" || num === "+" ? 1 : num === "-" ? -1 : parseFloat(num);
-    const exponente = exp ? parseInt(exp) : term.includes("x") ? 1 : 0;
-    coefs[exponente] = (coefs[exponente] || 0) + coef;
-  }
-
-  const gradoMax = Math.max(...Object.keys(coefs).map(Number));
-  const arreglo = [];
-  for (let i = gradoMax; i >= 0; i--) arreglo.push(coefs[i] || 0);
-  return arreglo;
-}
-
-// Buscar intervalos con cambio de signo
-function buscarIntervalos(funcStr, rangoMin, rangoMax, incremento = 0.5) {
-  const f = (x) => evaluate(funcStr, { x });
-  const intervalos = [];
-  const EPS = 1e-8;
-
-  let x1 = rangoMin;
-  let f1 = f(x1);
-
-  while (x1 + incremento <= rangoMax) {
-    let x2 = x1 + incremento;
-    let f2 = f(x2);
-
-    if (Math.abs(f1) < EPS) {
-      intervalos.push([x1, x1]);
-    } else if (Math.abs(f2) < EPS) {
-      intervalos.push([x2, x2]);
-    } else if (f1 * f2 < 0) {
-      intervalos.push([x1, x2]);
+    if (fa * fb > 0) { //verificacion de cambio de signo
+      console.log(`⚠ No hay cambio de signo en [${a}, ${b}]`);
+      return null;
     }
 
-    x1 = x2;
-    f1 = f2;
+    console.log(`\nFunción ingresada: ${funcStr}`);
+    console.log("\nIteraciones Interpolación Lineal:\n");
+
+    let xi, fxi;
+    let xi_anterior = null;
+
+    for (let i = 1; i <= maxIter; i++) {
+      const divisor = fb - fa;
+      if (Math.abs(divisor) < 1e-12) { //Si la division es aprox por 0 -> finalizan las iteraciones
+        console.log(`Iteración ${i}: ⚠ División por cero (fb ≈ fa), terminando.`);
+        return null;
+      }
+
+      // Fórmula de interpolacion lineal
+      xi = (a * fb - b * fa) / divisor;
+      fxi = f(xi); //imagen de xi
+
+      //Valores de la iteracion
+      console.log(
+        `Iteración ${i}: a=${a.toFixed(6)}, b=${b.toFixed(6)}, xi=${xi.toFixed(
+          6
+        )}, f(xi)=${fxi.toFixed(6)}`
+      );
+
+      // Condición de convergencia (a partir de la segunda iteración)
+      if (xi_anterior !== null && Math.abs(xi - xi_anterior) < tol) {
+        console.log(`\n✔ Convergencia alcanzada en ${i} iteraciones.`);
+        return xi;
+      }
+
+      // Actualizar extremos
+      if (fa * fxi < 0) {
+        b = xi;
+        fb = fxi;
+      } else {
+        a = xi;
+        fa = fxi;
+      }
+
+      xi_anterior = xi; // guardar para la próxima comparación
+    }
+
+    console.log("\n❌ No se alcanzó convergencia en el máximo de iteraciones.");
+    return xi;
+  } catch {
+    console.error("⚠ Error: la función ingresada no es válida.");
+    return null;
   }
+}
+
+// MÉTODO DE TANTEO
+function tanteo(funcStr, xMin = -10, xMax = 10, incremento = 0.5) {
+  const f = (x) => evaluate(funcStr, { x }); //funcion ingresada
+  const intervalos = [];
+
+  //Valor inicial
+  let x0 = xMin;
+  let f0 = f(x0);
+
+  //Bucle para detectar cambios de signo
+  while (x0 <= xMax) {
+    const x1 = x0 + incremento;
+    const f1 = f(x1);
+
+    // Detecta cruce de signo -> agrega al array
+    if (f0 * f1 < 0) {
+      intervalos.push([x0, x1]);
+    }
+
+    // Avanzar
+    x0 = x1;
+    f0 = f1;
+  }
+
+  //Contador de raices
+  const positivas = intervalos.filter(([a, b]) => b > 0).length;
+  const negativas = intervalos.filter(([a, b]) => a < 0 && b <= 0).length;
+
+  //Muestra de datos
+  console.log(`\n🔍 Intervalos detectados con cambio de signo:`);
+  if (intervalos.length === 0) console.log("  (ninguno encontrado)");
+  intervalos.forEach(([a, b], i) =>
+    console.log(`  Raíz ${i + 1}: entre [${a}, ${b}]`)
+  );
+
+  console.log(`\n➡ Raíces positivas: ${positivas}`);
+  console.log(`➡ Raíces negativas: ${negativas}`);
 
   return intervalos;
 }
 
-// ============================================================
-// MÉTODO DE INTERPOLACIÓN LINEAL (REGULA FALSI)
-// ============================================================
-function interpolacionLineal(funcStr, a, b, tol, maxIter = 50) {
-  const f = (x) => evaluate(funcStr, { x });
-
-  let fa = f(a);
-  let fb = f(b);
-
-  // 🚫 Intervalo degenerado (posible raíz exacta)
-  if (a === b) {
-    if (Math.abs(fa) < tol) {
-      console.log(`✅ Raíz exacta detectada en x = ${a}`);
-      return { raiz: a, iter: 0, intervalo: [a, b] };
-    } else {
-      console.log(`⚠ Intervalo degenerado [${a}, ${b}] sin raíz válida`);
-      return null;
-    }
-  }
-
-  // 🚫 Sin cambio de signo
-  if (fa * fb > 0) {
-    console.log(`⚠ No hay cambio de signo en [${a}, ${b}]`);
-    return null;
-  }
-
-  let xi, fxi;
-  for (let i = 1; i <= maxIter; i++) {
-    const divisor = fb - fa;
-    if (Math.abs(divisor) < 1e-12) {
-      console.log("⚠ División por cero evitada (fb ≈ fa). Terminando iteraciones.");
-      return null;
-    }
-
-    xi = (a * fb - b * fa) / divisor;
-    fxi = f(xi);
-
-    console.log(
-      `Iteración ${i}: a=${a.toFixed(6)}, b=${b.toFixed(6)}, xi=${xi.toFixed(6)}, f(xi)=${fxi.toFixed(6)}`
-    );
-
-    if (Math.abs(fxi) < tol) {
-      console.log(`✔ Convergencia alcanzada en ${i} iteraciones`);
-      return { raiz: xi, iter: i, intervalo: [a, b] };
-    }
-
-    if (fa * fxi < 0) {
-      b = xi;
-      fb = fxi;
-    } else {
-      a = xi;
-      fa = fxi;
-    }
-  }
-
-  console.log("❌ No se alcanzó convergencia en el máximo de iteraciones");
-  return { raiz: xi, iter: maxIter, intervalo: [a, b] };
-}
-
-// ============================================================
 // PROGRAMA PRINCIPAL
-// ============================================================
-
 console.clear();
-console.log(" MÉTODO DE INTERPOLACIÓN LINEAL (REGULA FALSI)\n");
+console.log(" MÉTODO DE INTERPOLACIÓN LINEAL\n");
 
-// Ingreso de función
-const funcionUsuario = prompt("Ingrese la función en x (ej: x^3 - 6x^2 + 11x - 6): ");
+const funcionUsuario = prompt("Ingrese la función en x (ej: x^3 - 6x^2 + 11): ");
+const tol = Number(prompt("Ingrese la tolerancia (ej: 0.001): ")) || 1e-6;
 
-if (!validarFuncion(funcionUsuario)) {
-  console.log("❌ Error: la función ingresada no es válida.");
-  process.exit(1);
-}
+//Valores iniciales para el rango de tanteo y el valor del incremento
+const rangoInferior = -100;
+const rangoSuperior = 100;
+const incremento = 0.5;
 
-// Mostrar regla de Descartes si es polinómica
-try {
-  const coefs = extraerCoeficientes(funcionUsuario);
-  const cambios = contarCambiosSigno(coefs);
-  console.log(`\n📈 Regla de Descartes: ${cambios} posibles raíces reales positivas.`);
-} catch {
-  console.log("⚠ No se pudo aplicar la regla de Descartes (no parece ser polinómica).");
-}
+//Array de intervalos
+const intervalos = tanteo(funcionUsuario, rangoInferior, rangoSuperior, incremento);
 
-// Parámetros
-const tol = Number(prompt("Ingrese la tolerancia (ej: 0.001): ")) || 0.001;
-const rangoMin = -100;
-const rangoMax = 100;
-
-// Buscar intervalos con cambio de signo
-console.log(`\n🔍 Buscando intervalos con cambio de signo en [${rangoMin}, ${rangoMax}]...`);
-const intervalos = buscarIntervalos(funcionUsuario, rangoMin, rangoMax, 0.5);
-
-if (intervalos.length === 0) {
-  console.log("⚠ No se encontraron intervalos con cambio de signo.");
+if (intervalos.length === 0) { //No se encuentran intervalos en los rangos establecidos
+  console.log("❌ No se detectaron cambios de signo en el rango analizado.");
   process.exit(0);
 }
 
-console.log("\n✅ Intervalos detectados:");
-intervalos.forEach(([a, b], i) =>
-  console.log(`  ${i + 1}) [${a.toFixed(6)}, ${b.toFixed(6)}]`)
-);
-
 // Aplicar el método en cada intervalo
 const raices = [];
-for (const [a, b] of intervalos) {
-  const resultado = interpolacionLineal(funcionUsuario, a, b, tol);
-  if (resultado !== null) raices.push(resultado);
+for (const [a, b] of intervalos) { //Calculo de a y b -> cada elemento del array
+  console.log("\n======================================");
+  console.log(`🔹 Aplicando Interpolación Lineal en [${a}, ${b}]`);
+  console.log("======================================\n");
+
+  const raiz = interpolacionLineal(funcionUsuario, a, b, tol);
+
+  if (raiz !== null) {
+    console.log(`\n✔ Raíz encontrada entre [${a}, ${b}]: x ≈ ${raiz.toFixed(6)}\n`);
+    raices.push(raiz); //agrega la raiz a la lista de raices
+  } else {
+    console.log(`❌ Falló la convergencia en [${a}, ${b}]`);
+  }
 }
 
-// Mostrar resultados
+// Graficar resultados
 if (raices.length > 0) {
-  console.log("\n📊 Resumen de raíces encontradas:");
-  console.table(
-    raices.map((r, i) => ({
-      "#": i + 1,
-      "Intervalo [a,b]": `[${r.intervalo[0].toFixed(6)}, ${r.intervalo[1].toFixed(6)}]`,
-      "Raíz aprox.": r.raiz.toFixed(6),
-      "Iteraciones": r.iter,
-    }))
-  );
-
-  // Graficar
   const f = (x) => evaluate(funcionUsuario, { x });
   const xs = [];
   const ys = [];
-  const pasos = 200;
+  const rangoMin = rangoInferior - 1;
+  const rangoMax = rangoSuperior + 1;
+  const incrementos = 200;
 
-  for (let i = 0; i <= pasos; i++) {
-    const x = rangoMin + (i * (rangoMax - rangoMin)) / pasos;
+  for (let i = 0; i <= incrementos; i++) {
+    const x = rangoMin + (i * (rangoMax - rangoMin)) / incrementos;
     xs.push(x);
     ys.push(f(x));
   }
@@ -219,8 +171,8 @@ if (raices.length > 0) {
       name: funcionUsuario,
     },
     {
-      x: raices.map((r) => r.raiz),
-      y: raices.map((r) => evaluate(funcionUsuario, { x: r.raiz })),
+      x: raices,
+      y: raices.map((r) => f(r)),
       type: "scatter",
       mode: "markers",
       name: "Raíces encontradas",
@@ -228,5 +180,5 @@ if (raices.length > 0) {
     },
   ]);
 } else {
-  console.log("❌ No se encontraron raíces para graficar.");
+  console.log("❌ No se encontró ninguna raíz válida.");
 }
