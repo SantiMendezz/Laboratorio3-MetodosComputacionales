@@ -32,7 +32,7 @@ const fEvaluador = (funcStr, x) => {
       return resultado;
     }
     // Si es un número complejo o un resultado no numérico, lo tratamos como no válido
-    return NaN; 
+    return NaN;
   } catch {
     return NaN; // Devuelve NaN si hay un error de dominio (ej: log(-1))
   }
@@ -57,9 +57,9 @@ function buscarIntervalos(funcStr, rangoMin, rangoMax, incremento = 0.5) {
 
     // Evitar NaNs (errores de dominio)
     if (isNaN(f1) || isNaN(f2)) {
-        x1 = x2;
-        f1 = f2;
-        continue;
+      x1 = x2;
+      f1 = f2;
+      continue;
     }
 
     // Si f(x1) o f(x2) es exactamente cero, se considera raíz directa
@@ -106,7 +106,7 @@ function metodoIntervaloMedio(funcStr, a, b, tol = 1e-6) {
   }
 
   // Cálculo de iteraciones teóricas máximas
-  const nTeorico = Math.log((b - a) / tol) / Math.log(2); 
+  const nTeorico = (Math.log(b - a) - Math.log(tol)) / Math.log(2);
   const nMax = Math.ceil(nTeorico);
 
   // Mostrar encabezado inicial
@@ -125,9 +125,9 @@ function metodoIntervaloMedio(funcStr, a, b, tol = 1e-6) {
 
     console.log(
       `Iteración ${i}: a = ${a.toFixed(6)}, b = ${b.toFixed(6)}, ` +
-        `xi = ${xi.toFixed(6)}, f(a) = ${fa.toFixed(6)}, f(b) = ${fb.toFixed(
-          6
-        )}, f(xi) = ${fxi.toFixed(6)}`
+      `xi = ${xi.toFixed(6)}, f(a) = ${fa.toFixed(6)}, f(b) = ${fb.toFixed(
+        6
+      )}, f(xi) = ${fxi.toFixed(6)}, dif-error = ${Math.abs(xi - xiAnt).toFixed(6)}`
     );
 
     // Condición de parada: no se evalúa si xiAnt es null (primera iteración)
@@ -213,39 +213,77 @@ if (raices.length > 0) {
     }))
   );
 
-  // Genero datos para graficar
-  const f = (x) => fEvaluador(funcionUsuario, x); // Uso el evaluador mejorado
-  const xs = [];
-  const ys = [];
-  const pasos = 200;
+  // ===============================
+  // GRAFICADO
+  // ===============================
+  const f = (x) => fEvaluador(funcionUsuario, x);
+  const Y_LIMIT = 1e6;
+  const pasos = 400;
+
+  // Guardará segmentos de la función continua
+  const segmentos = [];
+  let xs = [];
+  let ys = [];
 
   for (let i = 0; i <= pasos; i++) {
     const x = rangoMin + (i * (rangoMax - rangoMin)) / pasos;
-    const y = f(x); // Uso el evaluador mejorado
-    if (!isNaN(y)) { // Solo grafico puntos que no sean NaN (ej: fuera de dominio)
-        xs.push(x);
-        ys.push(y);
+    const y = f(x);
+
+    // Si la función no es finita (NaN o ±Infinity), corto el trazo
+    if (isNaN(y) || !Number.isFinite(y)) {
+      if (xs.length > 0) {
+        segmentos.push({ x: [...xs], y: [...ys] });
+        xs = [];
+        ys = [];
+      }
+      continue;
+    }
+
+    xs.push(x);
+    ys.push(Math.max(-Y_LIMIT, Math.min(Y_LIMIT, y)));
+  }
+
+  // Agrego último segmento si hay datos pendientes
+  if (xs.length > 0) segmentos.push({ x: xs, y: ys });
+
+  // ===============================
+  // MARCADORES DE RAÍCES
+  // ===============================
+  const rootXs = [];
+  const rootYs = [];
+  for (const r of raices) {
+    const xR = r.raiz;
+    const yR = fEvaluador(funcionUsuario, xR);
+    if (!isNaN(yR) && Number.isFinite(yR)) {
+      rootXs.push(xR);
+      rootYs.push(Math.max(-Y_LIMIT, Math.min(Y_LIMIT, yR)));
     }
   }
 
-  // Grafico función y raíces encontradas
-  plot([
-    {
-      x: xs,
-      y: ys,
-      type: "scatter",
-      mode: "lines",
-      name: funcionUsuario,
-    },
-    {
-      x: raices.map((r) => r.raiz),
-      y: raices.map((r) => fEvaluador(funcionUsuario, r.raiz)), 
-      type: "scatter",
-      mode: "markers",
-      name: "Raíces encontradas",
-      marker: { color: "red", size: 10 },
-    },
-  ]);
-} else {
-  console.log("❌ No se encontraron raíces para graficar.");
+  // ===============================
+  // PLOTEO FINAL
+  // ===============================
+  try {
+    plot([
+      // Dibuja cada segmento continuo por separado
+      ...segmentos.map((seg) => ({
+        x: seg.x,
+        y: seg.y,
+        type: "scatter",
+        mode: "lines",
+        name: funcionUsuario,
+      })),
+      // Dibuja las raíces en rojo
+      {
+        x: rootXs,
+        y: rootYs,
+        type: "scatter",
+        mode: "markers",
+        name: "Raíces encontradas",
+        marker: { color: "red", size: 10 },
+      },
+    ]);
+  } catch (err) {
+    console.error("Error al graficar:", err.message || err);
+  }
 }
