@@ -50,11 +50,13 @@ function newtonRaphson(funcStr, a, b, tol = 1e-6, maxIter = 20) {
         return null;
       }
 
+      //let diferenciaError = Math.abs(xnext - xi);
+
       const xnext = xi - fxi / dfxi; //Calculo de la iteracion
       console.log(
         `Iteración ${i}: x = ${xi.toFixed(6)}, f(x) = ${fxi.toFixed(
           6
-        )}, f'(x) = ${dfxi.toFixed(6)}, x-resultante = ${xnext.toFixed(6)}`
+        )}, f'(x) = ${dfxi.toFixed(6)}, x-resultante = ${xnext.toFixed(6)}, dif-error = ${Math.abs(xnext - xi).toFixed(6)}`
       );
 
       if (Math.abs(xnext - xi) < tol) { //Verifica la convergencia
