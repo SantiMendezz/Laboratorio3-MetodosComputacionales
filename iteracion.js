@@ -130,6 +130,14 @@ for (let i = 0; i <= pasos; i++) {
   ys_identidad.push(x);
 }
 
+const layout = {
+  title: { text: `Iteración de Aitken (Δ²)`, x: 0.5 },
+  xaxis: { title: { text: "x" } },
+  yaxis: { title: { text: "y" } },
+  margin: { t: 70 },
+  legend: { orientation: "h", y: -0.2 },
+};
+
 plot([
   { x: xs, y: ys_f, type: "scatter", mode: "lines", name: "f(x)" },
   { x: xs, y: ys_g, type: "scatter", mode: "lines", name: "g(x)" },
@@ -142,4 +150,4 @@ plot([
     name: "Iteraciones",
     marker: { color: "red", size: 10 },
   },
-]);
+], layout);
