@@ -162,23 +162,26 @@ if (raices.length > 0) {
     ys.push(f(x));
   }
 
-  plot([
-    {
-      x: xs,
-      y: ys,
-      type: "scatter",
-      mode: "lines",
-      name: funcionUsuario,
-    },
-    {
-      x: raices,
-      y: raices.map((r) => f(r)),
-      type: "scatter",
-      mode: "markers",
-      name: "Raíces encontradas",
-      marker: { color: "red", size: 10 },
-    },
-  ]);
+  plot(
+    [
+      {
+        x: xs,
+        y: ys,
+        type: "scatter",
+        mode: "lines",
+        name: funcionUsuario,
+      },
+      {
+        x: raices,
+        y: raices.map((r) => f(r)),
+        type: "scatter",
+        mode: "markers",
+        name: "Raíces encontradas",
+        marker: { color: "red", size: 10 },
+      },
+    ],
+    { title: "Interpolación lineal" } 
+  );
 } else {
   console.log("❌ No se encontró ninguna raíz válida.");
 }

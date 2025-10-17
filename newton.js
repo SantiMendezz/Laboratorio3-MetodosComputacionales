@@ -159,7 +159,7 @@ if (raices.length > 0) {
     ys.push(f(x));
   }
 
-  plot([
+  const data = [
     {
       x: xs,
       y: ys,
@@ -175,7 +175,17 @@ if (raices.length > 0) {
       name: "Raíces encontradas",
       marker: { color: "red", size: 10 },
     },
-  ]);
+  ];
+
+  const layout = {
+    title: { text: `Newton–Raphson`, x: 0.5 },
+    xaxis: { title: { text: "x" }, zeroline: true },
+    yaxis: { title: { text: "f(x)" }, zeroline: true },
+    margin: { t: 60 },
+    legend: { orientation: "h", y: -0.2 },
+  };
+
+  plot(data, layout);
 } else {
   console.log("❌ No se encontró ninguna raíz válida.");
 }

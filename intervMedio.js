@@ -265,26 +265,34 @@ if (raices.length > 0) {
   // ===============================
   // PLOTEO FINAL
   // ===============================
+  const data = [
+    ...segmentos.map((seg) => ({
+      x: seg.x,
+      y: seg.y,
+      type: "scatter",
+      mode: "lines",
+      name: funcionUsuario,
+    })),
+    {
+      x: rootXs,
+      y: rootYs,
+      type: "scatter",
+      mode: "markers",
+      name: "Raíces encontradas",
+      marker: { color: "red", size: 10 },
+    },
+  ];
+
+  const layout = {
+    title: { text: `Método de Intervalo Medio`, x: 0.5 }, // centrado
+    xaxis: { title: { text: "x" } },
+    yaxis: { title: { text: "f(x)" } },
+    margin: { t: 60 },
+    legend: { orientation: "h", y: -0.2 },
+  };
+
   try {
-    plot([
-      // Dibuja cada segmento continuo por separado
-      ...segmentos.map((seg) => ({
-        x: seg.x,
-        y: seg.y,
-        type: "scatter",
-        mode: "lines",
-        name: funcionUsuario,
-      })),
-      // Dibuja las raíces en rojo
-      {
-        x: rootXs,
-        y: rootYs,
-        type: "scatter",
-        mode: "markers",
-        name: "Raíces encontradas",
-        marker: { color: "red", size: 10 },
-      },
-    ]);
+    plot(data, layout);
   } catch (err) {
     console.error("Error al graficar:", err.message || err);
   }
